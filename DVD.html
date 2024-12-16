@@ -1,0 +1,1163 @@
+<!-- Movie Template for AllMyMovies http://www.bolidesoft.com by Óñàòûé  -->
+<!-- based on:                                                           -->
+<!-- Movie Template #2 - Created By Twink - TwinkMan666@hotmail.com      -->
+<!-- LastUpdated: 20/11/04  Version 1                                    -->
+
+
+
+<!-- Start of Variables -->
+<script>
+/* User Variables (CHANGABLE)*/
+var category = "(All)";                    //Category to Show First
+var MaxPerPage = 20;                       //Movies Per Page
+</script>
+<!-- End of Variables -->
+
+<!-- Start of HTML -->
+<html>
+<head>
+<title>All My Movies</title>
+  <style TYPE="text/css">
+    text,body,p,div,span,th,td,ul,li { FONT-SIZE: 10pt; FONT-FAMILY: Trebuchet MS, Verdana, Arial, Helvetica, sans-serif; color: black; background: white; }
+    HR { color: black; }
+    A:link { COLOR: #FFFFFF; background: black; }
+    A:visited { COLOR: #FFFFFF; background: black; }
+    A:hover { COLOR: #CC0000; background: black; }
+    A:active { COLOR: #CC0000; background: black; }
+    td.blk { color: white; background: black; border: solid; border-color: black; }
+    table.blk { color: white; background: black; border: solid; border-color: black; border-width: thin; }
+    table.lgt { color: black; background: white; border: solid; border-width: thin; border-color: #F5F5F5; }
+    td.lgt { color: black; background: white; border: solid; border-width: thin; border-color: #F5F5F5; }
+    p.title { font-size: 18pt; font-weight: bold; }
+  </style>
+</head>
+
+<body onLoad="init()">
+  <p>
+    All My Movies <br>
+    Total: 36 movies<br>
+
+    <a style="color: #000000; background-color: #FFFFFF" href="javascript:dToggle(oOptions,-1)">
+      Options
+    </a>&nbsp
+    <a style="color: #000000; background-color: #FFFFFF" href="javascript:dToggle(oFind,-1)">
+      Search
+    </a>
+</p>
+
+<script>
+  <!-- Waiting Picture/Message In here
+    document.write("<table id = 'wait' class='blk' border='1' cellspacing='0' cellpadding='5'>");
+    document.write("<tr><td id='wait_text'>Please wait while list loads...</td></tr>");
+    document.write("</table>");
+  -->
+</script>
+
+<table ID='oOptions' class= "blk" border='20' cellspacing='0' cellpadding='5' style='display:none'>
+<thead>
+   <tr>
+    <td class="blk" nowrap colspan="2"><b>Options</b></td>
+   </tr>
+</thead>
+<tbody>
+   <tr>
+       <td class="lgt" nowrap>Items Per Page</td>
+       <td class="lgt" nowrap><input type="text" name = "perpage" onChange="MaxPerPage = round(perpage.value,0);showCategory();">
+</td>
+   </tr>
+   <tr>
+
+       <td class="lgt" nowrap>Group By</td>
+       <td ID = 'oOptionsCategories' class="lgt" nowrap>
+       </td>
+       
+   </tr>
+</tbody>
+</table>
+
+<table ID = 'oFind' class = "blk" border='20' cellspacing='0' cellpadding='5' style='display:none'>
+<thead>
+  <tr>
+    <td class="blk" nowrap colspan="2"><b>Search</b></td>
+    </td>
+  </tr>
+</thead>
+<tbody>
+  <td class="lgt" nowrap>
+    <input type="text" name = "oFindText">
+    <input type="submit" value = "Search" onclick = "javascript:search(oFindText.value);">
+  </td>
+</tbody>
+</table>
+
+<br>
+
+<table ID='oMovieTable' class= "blk" border='20' cellspacing='0' cellpadding='5' style='display:none'>
+<thead>
+  <tr>
+    <td class="blk" nowrap>&nbsp</td>
+    <td class="blk" nowrap style="cursor:hand" onclick ="sortby('OriginalTitle')">Title</td>
+    <td class="blk" nowrap style="cursor:hand" onclick ="sortby('Borrower')">Lent To</td>
+    <td class="blk" nowrap style="cursor:hand" onclick ="sortby('Category')">Genre</td>
+    <td class="blk" nowrap style="cursor:hand" onclick ="sortby('Length')">Length</td>
+    <td class="blk" nowrap style="cursor:hand" onclick ="sortby('Source')">Source</td>
+    <td class="blk" nowrap style="cursor:hand" onclick ="sortby('VideoFormat')">Format</td>
+  </tr>
+  <tr>
+    <td ID='oGroupSel' class = "blk">
+    <td ID='oGroupName' colSpan='6' class = "blk">
+    </td>
+  </tr>
+</thead>
+  <tbody ID='oMovieList' class = "lgt">
+  </tbody>
+  <tbody ID='oPages'>
+     <td ID = 'oPagesBack' class = 'blk'>
+     </td>
+     <td ID = 'oPagesMid' class = 'blk' colspan = "5">
+     </td>
+     <td ID = 'oPagesNext'class = 'blk'>
+     </td>
+  </tbody>
+</table>
+
+<p>Created with <a style="color: #000000; background-color: #FFFFFF" href="http://www.bolidesoft.com" target="_blank">All My Movies</a>.</p>
+</body>
+</html>
+<!-- End of HTML -->
+
+<!-- Start of Script -->
+<script>
+//SYSTEM VARIABLES
+var StartFrom = 0;        // Start Showing From (used for pages)
+var movies = null;        // Holds All Movies
+var movie = null;         // Current movie
+var index = 0;            // Current movie number in this category
+var sortedby = 0;         // Last Column Sorted By
+var sortasc = true;       // Sort Ascending/Decending
+var ShownCategory = new Array();  //Array of Category Types
+perpage.value = MaxPerPage;
+
+//GENERAL FUNCTIONS
+String.prototype.trim = function(){
+   return this.replace(/(^\s*)|(\s*$)/g, "");
+}
+
+function round(number,X) {
+   return Math.round(number*Math.pow(10,X))/Math.pow(10,X);
+}
+
+function dToggle(x,y){
+   if (y==-1&&x.style.display==""||y==0)
+     x.style.display="none";
+   else x.style.display="";
+}
+
+//DISPLAY FUNCTIONS
+//Add Type of Category (Letters, Genre, Format)
+function AddCategoryType(Name,Variable){
+    var o = ShownCategory.length;
+    ShownCategory[o] = new ShownCategoryType(Name,Variable);
+    if(o==0) ShownCategory[o].shown=true; //Default to Showing First Category.
+    oOptionsCategories.innerHTML +=  "<input type = 'checkbox' "+(ShownCategory[o].shown==true?"checked":"")+" onclick='ShownCategory["+o+"].shown=!ShownCategory["+o+"].shown;init();'>"+Name+"<br>";
+}
+
+//Create Actual Category (A-Z, Action/Comedy, Divx/MPEG)
+var ShownCategories = new Array();
+function clearCategories(){
+   ShownCategories = new Array();
+}
+function createCategory(X){
+  ShownCategories[ShownCategories.length]=X;
+}
+
+function showCategories(){
+   oGroupName.innerHTML = "";
+   ShownCategories.sort(sort2);
+   for(var i=0;i<ShownCategories.length;i++){
+     oGroupName.innerHTML += "<a href='javascript:StartFrom=0;category=\""+ShownCategories[i]+"\";showCategory();'>"+ShownCategories[i]+"</a>&nbsp";
+   }
+   oGroupName.align = "center";
+   oGroupName.style.fontWeight = "Bold";
+}
+
+//Wipe All Movies From Display (called when swapping Category/Page)
+function clearMovies(){
+   oMovieList.innerText ="";
+}
+
+//Toggles Extra Movie Details
+function showDetails(){
+   dToggle(eval(window.event.srcElement.toggle),-1);
+}
+
+
+
+//Reads Movies into Array Sorting into Categories
+function init() {
+   movies  = new Array();
+   var catArray = null;
+   var cArray = null;
+   var temp;
+   var Category = "";
+   oGroupName.innerHTML = "";
+   clearCategories();
+
+    var elements = document.body.getElementsByTagName("Movie");
+//  var xmldoc=new ActiveXObject("MSXML2.DOMDocument.3.0");
+//  xmldoc.load("movies.xml");
+//  elements = xmldoc.getElementsByTagName("Movie");
+
+
+   movies["(All)"] = new Array();
+   createCategory("(All)");
+   for (var i = 0; i < elements.length; i++) {
+     temp = "";
+     for(var x =0;x<ShownCategory.length;x++){
+       var value = eval("elements[i]."+ShownCategory[x].Variable);
+       if(ShownCategory[x].shown==true)temp += " / " + (value!=""?value:"(None)");
+     }
+
+     cArray = new String(temp).split(" / ");
+     for (var j = 0; j < cArray.length;j++){
+       Category = cArray[j].trim();
+       if (Category != null && Category != "" && Category != "undefined") {
+         catArray = movies[Category];
+         if (catArray == null) {
+           catArray = new Array();
+           movies[Category] = catArray;
+           catArray[0] = elements[i];
+           createCategory(Category);
+         } else {
+           catArray[catArray.length] = elements[i];
+         }
+       }
+    }
+    movies["(All)"][movies["(All)"].length] = elements[i];
+   }
+   showCategories();
+   showCategory();
+}
+
+//Loop Through Movie[category] and Show each movie
+function showCategory(){
+   if(movies[category]==null) category = "(All)";
+   oGroupSel.innerHTML = "<STRONG><CENTER>"+category+"<CENTER></STRONG>";
+   clearMovies();
+
+   EndAt=((movies[category].length-StartFrom)<MaxPerPage?(movies[category].length):MaxPerPage+StartFrom);
+   
+   if(movies[category].length==0||StartFrom==EndAt){
+      oRow = oMovieList.insertRow();
+      oCell = oRow.insertCell();
+      oCell.align = "center";
+      oCell.className = "lgt";
+      oCell.innerHTML = "No Movies to Display<br>";
+      oCell.colSpan="7";
+   } else {
+     for(var i = StartFrom; i<EndAt;i++){
+       if(i!=StartFrom){
+         oRow = oMovieList.insertRow();
+         oCell=oRow.insertCell();
+         oCell.colSpan="7";
+         oCell.className = "blk";
+       }
+       showMovie(i);
+     }
+   }
+   
+
+ 
+   if(movies[category].length>MaxPerPage){
+     oPagesBack.innerHTML = "<CENTER><a href='javascript:StartFrom="+(StartFrom-MaxPerPage>0?StartFrom-MaxPerPage:0)+";showCategory();'>Back</a></CENTER>";
+     oPagesMid.innerHTML = "<STRONG><CENTER>Page: " + round((StartFrom/MaxPerPage)+1,0) + " of " + round((movies[category].length/MaxPerPage)+1,0) + "</CENTER></STRONG>";
+     oPagesNext.innerHTML = "<CENTER><a href='javascript:StartFrom="+(StartFrom+MaxPerPage<movies[category].length?StartFrom+MaxPerPage:StartFrom)+";showCategory();'>Next</a></CENTER";
+   }else{
+     oPagesBack.innerHTML = "";
+     oPagesMid.innerHTML = "";
+     oPagesNext.innerHTML = "";
+   }
+ 
+   dToggle(oMovieTable,1);
+   dToggle(wait,0);
+}
+
+function showMovie(i){
+  movie = movies[category][i];
+
+  var oRow;
+  var oCell;
+  var temp;
+
+  oRow = oMovieList.insertRow();
+
+  temp="<center>";
+if(movie.URL!="")temp+="<a href = '"+movie.URL+"' target='_blank'> ";
+  if(movie.PICTURE!=""){
+    temp+="<img src='"+movie.Picture+"' width='98' height='140'>";
+  }else{
+    temp+="img/<img src='nopic.gif' width='98' height='140'>";
+}
+
+  var layout = new Array()
+  layout[0] = new Array();
+ 
+  layout[0][0] = new Field("123");
+  layout[0][0].HTML = temp;
+  layout[0][0].rowSpan = "2";
+  layout[0][0].action = false;
+
+  layout[0][1] = new Field("movie.OriginalTitle");
+  layout[0][1].fontWeight = "Bold";
+  layout[0][2] = new Field("movie.Borrower");
+  layout[0][3] = new Field("movie.Category");
+  layout[0][4] = new Field("movie.Length");
+  layout[0][5] = new Field("movie.Source");
+  layout[0][6] = new Field("movie.VideoFormat");
+
+  layout[1] = new Array();
+  layout[1][0] = new Field("movie.Description")
+  layout[1][0].action = false;
+  layout[1][0].colSpan = "6"
+
+  for(y=0;y<layout.length;y++){
+   if(layout[y] == null)break;
+   oRow = oMovieList.insertRow();
+    for(x=0;x<layout[0].length;x++) {
+       if(layout[y][x] == null)break;
+      (oCell = oRow.insertCell());
+      oCell.innerHTML = eval(layout[y][x].field)+ "&nbsp";
+      if(layout[y][x].HTML!="")oCell.innerHTML = layout[y][x].HTML;
+
+      if(layout[y][x].action==true){
+        oCell.style.cursor = "hand";
+        oCell.onclick = showDetails;
+        oCell.toggle =  "Expand" + movie.Number;
+      }
+      oCell.className = "lgt";
+      oCell.rowSpan = layout[y][x].rowSpan;
+      oCell.colSpan = layout[y][x].colSpan;
+      oCell.style.fontWeight = layout[y][x].fontWeight;
+    }
+  }
+
+  oRow = oMovieList.insertRow();
+  oRow.id= "Expand" + movie.Number;
+  oCell = oRow.insertCell();
+  oCell.className = "lgt";
+  oCell.vAlign = "top";
+  oCell.innerHTML = "<strong>Year:<br>Director:<br>Actors:</strong>"
+  oCell.align = "center";
+  oCell = oRow.insertCell();
+  oCell.className = "lgt";
+  oCell.innerHTML = movie.Year + "&nbsp<br>" + movie.Director + "&nbsp<br>" + movie.Actors;
+  oCell.colSpan="6";
+  oCell.vAlign = "top";
+  oRow.style.display = "none";
+ 
+}
+
+//STRUCTS
+function Field(FieldName){
+   this.field = FieldName;
+   this.rowSpan = "1";
+   this.colSpan = "1";
+   this.fontWeight = "";
+   this.HTML = "";
+   this.action = true;
+}
+
+function ShownCategoryType(Name,Variable){
+   this.Name = Name;
+   this.Variable = Variable;
+   this.shown = false;
+}
+
+
+//SORT FUNCTIONS
+function sortby(X){
+   if(sortedby!=X||sortedby==X&&sortasc==false){
+     sortedby = X;
+     movies[category] = movies[category].sort(sort);
+     sortasc=true;
+   } else {
+     movies[category] = movies[category].sort(revsort);
+     sortasc=false;
+   }
+   showCategory();
+}
+
+function sort2(X,Y){
+   if(X<Y)return -1;
+   if(X>Y)return 1;
+   return 0;
+}
+
+function sort(X,Y){
+   if (eval("X."+sortedby)<eval("Y."+sortedby)) return -1;
+   if (eval("X."+sortedby)>eval("Y."+sortedby)) return 1;
+   return 0;
+}
+
+function revsort(X,Y){
+   if (eval("X."+sortedby)>eval("Y."+sortedby)) return -1;
+   if (eval("X."+sortedby)<eval("Y."+sortedby)) return 1;
+   return 0;
+}
+
+//FIND
+function search(X){
+   if(movies["(Search)"]==null) createCategory("(Search)");
+   movies["(Search)"] = new Array();
+   var v_regexp = new RegExp(X,"gi");
+
+   for(var i = 0;i<movies["(All)"].length;i++){
+   if(v_regexp.test(movies["(All)"][i].OriginalTitle)||v_regexp.test(movies["(All)"][i].Description))
+       movies["(Search)"][movies["(Search)"].length] = movies["(All)"][i];
+   }
+
+   showCategories();
+   category="(Search)";
+   StartFrom = 0;
+   showCategory();
+}
+
+
+</script>
+<!-- End of Scripts -->
+
+<!-- Start of Movies -->
+</Movies>
+  <Movie
+    Number = "239"
+    Source = "DVD"
+    Rating = "66/100"
+    OriginalTitle = "Kamui Gaiden"
+    Director = "Yôichi Sai"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2009"
+    Length = "120 min"
+    Actors = "Ken'ichi Matsuyama, Koyuki, Kaoru Kobayashi, Kôichi Satô, Hideaki Itô, Ekin Cheng"
+    URL = ""
+    Description = "El joven Kamui es un ninja fugitivo que ha abandonado su clan y ahora es perseguido constantemente por asesinos. Sus viajes lo llevan a un pueblo costero donde conoce a Hanbei, un pescador que comparte el sentido del honor del ex ninja."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/852.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "240"
+    Source = "DVD"
+    Rating = "67/100"
+    OriginalTitle = "Kandisha"
+    Director = "&nbsp;"
+    Country = "Germany"
+    Category = "&nbsp;"
+    Year = "2020"
+    Length = "85 min"
+    Actors = "&nbsp;"
+    URL = ""
+    Description = "Son las vacaciones de verano y las mejores amigas Amélie, Bintou y Morjana se juntan con los adolescentes del vecindario. Por la noche, se divierten compartiendo historias que ponen la piel de gallina y leyendas urbanas. Pero cuando Amélie es agredida por su ex, recuerda la historia de Kandisha, un demonio poderoso y vengativo. Asustada, molesta, la llama. Al día siguiente, su ex aparece muerta. La leyenda es cierta y ahora Kandisha se embarca en una matanza. Las tres chicas harán cualquier cosa para romper la maldición."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/853.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "241"
+    Source = "DVD"
+    Rating = "0/100"
+    OriginalTitle = "Halloween Park"
+    Director = "Simon Sandquist"
+    Country = "Germany"
+    Category = "&nbsp;"
+    Year = "2023"
+    Length = "94 min"
+    Actors = "Wilma Lidén, Omar Rudberg, Amanda Lindh, Embla Ingelman-Sundberg, Ludvig Deltin, Emil Algpeus"
+    URL = ""
+    Description = "La administradora del parque, Fiona, tiene la tarea de cuidar de algunos antiguos amigos que ganaron un adelanto privado exclusivo de Halloween en Liseberg: una noche entera, completamente solos en el parque vacío. Pero el algodón de azúcar, las encantadoras atracciones y muchas risas pronto se convierten en algo completamente diferente, cuando se dan cuenta de que no están solos en el parque. Y la noche de los sueños se convierte rápidamente en una auténtica pesadilla."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/887.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "242"
+    Source = "DVD"
+    Rating = "66/100"
+    OriginalTitle = "Kate & Leopold"
+    Director = "James Mangold"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2001"
+    Length = "123 min"
+    Actors = "Meg Ryan, Hugh Jackman, Liev Schreiber, Breckin Meyer, Natasha Lyonne, Bradley Whitford"
+    URL = ""
+    Description = "Kate McKay es pura negocios y no tiene tiempo para nadie, especialmente para su exnovio vecino, quien sigue afirmando que descubrió un portal a tiempo. Sin embargo, es sincero y, en un viaje al siglo XIX, un curioso y caballeroso duque llamado Leopold lo sigue hasta la actualidad. Leopold está fascinado por una mujer moderna como Kate, quien ella misma comienza a apreciar sus costumbres pasadas de moda."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/854.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "243"
+    Source = "DVD"
+    Rating = "40/100"
+    OriginalTitle = "Kdabra"
+    Director = "&nbsp;"
+    Country = "Colombia"
+    Category = "Sci-fi & fantasy, Drama"
+    Year = "2009"
+    Length = "&nbsp;"
+    Actors = "Christopher Von Uckermann (Luca - Guido), Damián Alcázar (René), Maya Zapata (Jazmim), Fabio Rubiano (Ignacio), Margarita Rosa de Francisco (Ana), Joaquín Cosío (Blas), Martín Karpan (Daniel Trejo), Felipe Botero (Matias), Jairo Camargo (Vinay), Nicolás Rincón (Salvador), Didier Van den Hove (Diego Moretti), Albi De Abreu (Padre Andrés)"
+    URL = ""
+    Description = "Kdabra reúne elementos del mundo real y sobrenatural, donde el atrapante misterio que rodea a su protagonista, Luca, un joven de 17 años que ha escapado de una oscura comunidad, desencadena una serie de hechos imprevistos."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/855.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "244"
+    Source = "DVD"
+    Rating = "59/100"
+    OriginalTitle = "Keep Watching"
+    Director = "Sean Carter"
+    Country = "Australia"
+    Category = "&nbsp;"
+    Year = "2017"
+    Length = "89 min"
+    Actors = "Bella Thorne, Natalie Martinez, Ioan Gruffudd, Chandler Riggs, Matthew Willig, Leigh Whannell"
+    URL = ""
+    Description = "Una familia que queda aprisionada en su propia casa por intrusos debe jugar un juego de vida o muerte en el que las misteriosas reglas se aclaran a medida que avanza la noche."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/856.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "245"
+    Source = "DVD"
+    Rating = "55/100"
+    OriginalTitle = "Khumba 3D"
+    Director = "Anthony Silverston"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2013"
+    Length = "85 min"
+    Actors = "Jake T. Austin, Liam Neeson, Steve Buscemi, AnnaSophia Robb, Laurence Fishburne, Richard E. Grant"
+    URL = ""
+    Description = "Rechazada por su rebaño supersticioso, una cebra medio rayada se embarca en una audaz búsqueda para ganarse sus rayas, pero encuentra el coraje y la autoaceptación para salvar a todos los animales del Gran Karoo."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/857.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "246"
+    Source = "DVD"
+    Rating = "66/100"
+    OriginalTitle = "Kick-Ass 2"
+    Director = "Jeff Wadlow"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2013"
+    Length = "103 min"
+    Actors = "Aaron Taylor-Johnson, Christopher Mintz-Plasse, Chloë Grace Moretz, Jim Carrey, Clark Duke, Morris Chestnut"
+    URL = ""
+    Description = "El héroe disfrazado de la escuela secundaria Kick-Ass regresa, esta vez con un grupo de ciudadanos normales que se han inspirado para luchar contra el crimen disfrazados. Mientras tanto, Red Mist planea un acto de venganza que afectará a todos los que Kick-Ass conoce."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/858.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "247"
+    Source = "DVD"
+    Rating = "59/100"
+    OriginalTitle = "Kids vs. Aliens"
+    Director = "Jason Eisener"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2022"
+    Length = "75 min"
+    Actors = "Jonathan Torrens, Alexandra MacLean, Jordan Poole"
+    URL = ""
+    Description = "La furiosa fiesta de una casa de adolescentes se convierte en terror cuando los extraterrestres atacan, lo que obliga a dos hermanos en guerra a unirse para sobrevivir la noche."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/859.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "248"
+    Source = "DVD"
+    Rating = "69/100"
+    OriginalTitle = "Kill the Messenger"
+    Director = "Michael Cuesta"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2014"
+    Length = "112 min"
+    Actors = "Jeremy Renner, Robert Patrick, Jena Sims, Robert Pralgo, Hajji Golightly, Ted Huckabee"
+    URL = ""
+    Description = "Un periodista se convierte en el blanco de una cruel campaña de difamación que lo lleva al punto del suicidio después de exponer el papel de la CIA en el armamento de los rebeldes de la Contra en Nicaragua y la importación de cocaína a California. Basada en la historia real del periodista Gary Webb."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/860.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "249"
+    Source = "DVD"
+    Rating = "70/100"
+    OriginalTitle = "Kill Zone 2"
+    Director = "Soi Cheang"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2015"
+    Length = "121 min"
+    Actors = "Tony Jaa, Louis Koo, Jing Wu, Simon Yam, Jin Zhang, Ken Lo"
+    URL = ""
+    Description = "Un policía de Hong Kong llamado Kit arresta a un gángster importante solo para descubrir que su tapadera ha sido descubierta y su testigo principal ha desaparecido. El gángster, en represalia, lo secuestra y lo encierra en una cárcel tailandesa con una identidad criminal falsa. Con la ayuda de un humilde guardia de prisión llamado Chai, ambos hombres deben enfrentarse al gángster y a sus secuaces y acabar con ellos."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/861.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "250"
+    Source = "DVD"
+    Rating = "62/100"
+    OriginalTitle = "Kimi"
+    Director = "Steven Soderbergh"
+    Country = "United States of America"
+    Category = "Thriller, Crime, Mystery"
+    Year = "2022"
+    Length = "89"
+    Actors = "Zoë Kravitz (Angela Childs), Byron Bowers (Terry Hughes), Jaime Camil (Antonio Rivas), Erika Christensen (Samantha Gerrity), Derek DelGaudio (Bradley Hasling), Robin Givens (Angela's Mother), Charles Halford (Tall Thug), Devin Ratray (Kevin), Jacob Vargas (Glasses Thug), Rita Wilson (Natalie Chowdhury), India de Beaufort (Sharon), Sarai Koo (Jessica Hasling), Koya Harada (Bradley's Son), George Evans (Neighbor Husband), Sheila Evans (Neighbor Wife), Sebastian Evans (Neighbor Kid)"
+    URL = ""
+    Description = "Una trabajadora tecnológica con agorafobia descubre pruebas grabadas de un delito violento, pero encuentra resistencia cuando intenta denunciarlo. En busca de justicia, deberá hacer lo que más teme: abandonar su apartamento."
+    Comments = "She's not the only one listening."
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/862.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "251"
+    Source = "DVD"
+    Rating = "53/100"
+    OriginalTitle = "Kindergarten Cop 2"
+    Director = "Don Michael Paul"
+    Country = "United Kingdom"
+    Category = "&nbsp;"
+    Year = "2016"
+    Length = "100 min"
+    Actors = "Dolph Lundgren, Bill Bellamy, Sarah Strange, Aleks Paunovic, Andre Tricoteux, Michael P. Northey"
+    URL = ""
+    Description = "Asignado para recuperar datos confidenciales robados, un brusco agente del FBI trabaja encubierto como maestro de jardín de infantes, pero el ambiente liberal y políticamente correcto de la escuela es más de lo que esperaba."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/863.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "252"
+    Source = "DVD"
+    Rating = "69/100"
+    OriginalTitle = "Kinds of Kindness"
+    Director = "Yorgos Lanthimos"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2024"
+    Length = "164 min"
+    Actors = "Emma Stone, Jesse Plemons, Willem Dafoe, Margaret Qualley, Hong Chau, Joe Alwyn"
+    URL = ""
+    Description = "Un hombre busca liberarse de su camino predeterminado, un policía cuestiona el comportamiento de su esposa después de su regreso de un supuesto ahogamiento y la búsqueda de una mujer para localizar a un individuo extraordinario que, según la profecía, se convertiría en un guía espiritual de renombre."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/885.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "254"
+    Source = "DVD"
+    Rating = "62/100"
+    OriginalTitle = "King Kong vs. Godzilla"
+    Director = "Ishiro Honda, Tom Montgomery"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "1963"
+    Length = "91 min"
+    Actors = "Michael Keith, Harry Holcombe, James Yagi, Tadao Takashima, Kenji Sahara, Ichirô Arishima"
+    URL = ""
+    Description = "Un reportero de la ONU emite un reportaje sobre la aparición de un monstruo prehistórico que emerge de su hibernación mientras una empresa farmacéutica busca publicidad con un monstruo propio."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/865.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "253"
+    Source = "DVD"
+    Rating = "76/100"
+    OriginalTitle = "King Kong"
+    Director = "Peter Jackson"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2005"
+    Length = "&nbsp;"
+    Actors = "Naomi Watts, Jack Black, Adrien Brody, Thomas Kretschmann, Colin Hanks, Andy Serkis"
+    URL = ""
+    Description = "El extravagante e imprudente documentalista Carl Denham navega hacia la remota Isla Calavera para filmar su última epopeya con la protagonista principal, Ann Darrow. Los guerreros nativos secuestran a Ann para usarla como sacrificio mientras convocan a &quot;Kong&quot; con el brujo local. Pero en lugar de devorar a Ann, Kong la salva. Finalmente, Kong es llevado de regreso a Nueva York, donde busca a Ann por todas partes y finalmente termina en lo alto del Empire State Building, enfrentándose a una flota de aviones de combate de la Primera Guerra Mundial."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/864.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "255"
+    Source = "DVD"
+    Rating = "59/100"
+    OriginalTitle = "King of Thieves"
+    Director = "James Marsh"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2018"
+    Length = "109 min"
+    Actors = "Michael Caine, Jim Broadbent, Tom Courtenay, Charlie Cox, Paul Whitehouse, Francesca Annis"
+    URL = ""
+    Description = "Un veterano grupo de ladrones ya retirados planea dar un último gran atraco en una joyería de Londres."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/866.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "256"
+    Source = "DVD"
+    Rating = "73/100"
+    OriginalTitle = "King Richard"
+    Director = "Reinaldo Marcus Green"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2021"
+    Length = "145 min"
+    Actors = "Will Smith, Aunjanue Ellis-Taylor, Jon Bernthal, Saniyya Sidney, Demi Singleton, Tony Goldwyn"
+    URL = ""
+    Description = "Una mirada a cómo las superestrellas del tenis Venus y Serena Williams se convirtieron en quienes son después del entrenamiento de su padre Richard Williams."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/867.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "257"
+    Source = "DVD"
+    Rating = "69/100"
+    OriginalTitle = "King Tweety"
+    Director = "Careen Ingle"
+    Country = "United States of America, Brazil"
+    Category = "Animation, Adventure, Comedy, Family, Fantasy, Mystery"
+    Year = "2022"
+    Length = "81"
+    Actors = "Eric Bauza (Tweety - Sylvester - Larry Bird [voice]), Candi Milo (Granny - Green Bean - Lady Bird Johnson [voice]), Jon Daly (Diego [voice]), Niccole Thurman (Aoogah - Melaney Blank [voice]), Flula Borg, Esq. - Crowd [voice]), Carlease Burke (Queen Honk - Candice [voice]), Dana DeLorenzo (Izza [voice]), Regi Davis (Rodrigo - Charlie Bird Parker - Owl [voice]), Riki Lindhome (Beep Beep [voice]), Maya Lynne Robinson (Officer Gnutz - Inflatable Suit Dancer [voice]), Mark Whitten (Officer Siedes - John Foray [voice])"
+    URL = ""
+    Description = "El canario amarillo favorito de todos inesperadamente se convierte en el siguiente en la fila para la corona cuando la reina de una isla paradisíaca desaparece. El séquito de Su Alteza incluye a la temeraria Granny en motocicleta y al astuto Sylvester, cuya lealtad se pone a prueba cuando descubre un siniestro complot para eliminar a Piolín para siempre."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/868.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "258"
+    Source = "DVD"
+    Rating = "76/100"
+    OriginalTitle = "Kingdom of Heaven"
+    Director = "Ridley Scott"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2005"
+    Length = "&nbsp;"
+    Actors = "Orlando Bloom, Eva Green, Jeremy Irons, David Thewlis, Brendan Gleeson, Marton Csokas"
+    URL = ""
+    Description = "Un hombre viaja a Jerusalén durante las Cruzadas del siglo XII y se encuentra como defensor de la ciudad y su gente."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/869.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "259"
+    Source = "DVD"
+    Rating = "73/100"
+    OriginalTitle = "Kingdom of the Planet of the Apes"
+    Director = "Wes Ball"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2024"
+    Length = "145 min"
+    Actors = "Owen Teague, Freya Allan, Kevin Durand, Peter Macon, William H. Macy, Eka Darville"
+    URL = ""
+    Description = "Muchos años después del reinado de César, un joven simio emprende un viaje que lo llevará a cuestionar todo lo que le han enseñado sobre el pasado y a tomar decisiones que definirán el futuro tanto de los simios como de los humanos."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/886.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "260"
+    Source = "DVD"
+    Rating = "78/100"
+    OriginalTitle = "Kingsman: The Secret Service"
+    Director = "Matthew Vaughn"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2014"
+    Length = "129 min"
+    Actors = "Colin Firth, Samuel L. Jackson, Mark Strong, Taron Egerton, Sophie Cookson, Jack Davenport"
+    URL = ""
+    Description = "Una organización de espías recluta a un prometedor niño de la calle para su programa de formación, mientras que una amenaza global surge de un retorcido genio de la tecnología."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/870.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "261"
+    Source = "DVD"
+    Rating = "67/100"
+    OriginalTitle = "Km 31-2"
+    Director = "Rigoberto Castañeda"
+    Country = "Mexico"
+    Category = "Mystery, Horror"
+    Year = "2016"
+    Length = "105"
+    Actors = "Rosanna Engel (Emma), Iliana Fox (Ágata - Catalina), Carlos Aragón (Martín Ugalde), Verónica Merchant, Juan Manuel Bernal, Matías del Castillo (Tomás Romeu)"
+    URL = ""
+    Description = "Una mujer busca a su hijo que se perdió en circunstancias misteriosas."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/871.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "262"
+    Source = "DVD"
+    Rating = "55/100"
+    OriginalTitle = "Knights of the Zodiac"
+    Director = "&nbsp;"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2023"
+    Length = "117 min"
+    Actors = "Mackenyu, Madison Iseman, Sean Bean, Famke Janssen, Mark Dacascos, Nick Stahl"
+    URL = ""
+    Description = "Cuando una diosa de la guerra reencarna en el cuerpo de una joven, el huérfano de la calle Seiya descubre que está destinado a protegerla y salvar el mundo. Pero sólo si puede afrontar su propio pasado y convertirse en Caballero del Zodíaco."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/872.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "263"
+    Source = "DVD"
+    Rating = "81/100"
+    OriginalTitle = "Knives Out"
+    Director = "Rian Johnson"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2019"
+    Length = "130 min"
+    Actors = "Daniel Craig, Chris Evans, Ana de Armas, Jamie Lee Curtis, Michael Shannon, Don Johnson"
+    URL = ""
+    Description = "Un detective investiga la muerte del patriarca de una familia excéntrica y combativa.<br><br>"
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/873.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "264"
+    Source = "DVD"
+    Rating = "64/100"
+    OriginalTitle = "Knock at the Cabin"
+    Director = "M. Night Shyamalan"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2023"
+    Length = "100 min"
+    Actors = "Dave Bautista, Jonathan Groff, Ben Aldridge, Nikki Amuka-Bird, Rupert Grint, Abby Quinn"
+    URL = ""
+    Description = "Mientras están de vacaciones en una cabaña remota, una joven y sus padres son tomados como rehenes por cuatro extraños armados que exigen que la familia tome una decisión impensable para evitar el apocalipsis. Con acceso limitado al mundo exterior, la familia debe decidir qué creen antes de que todo esté perdido."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/874.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "265"
+    Source = "DVD"
+    Rating = "62/100"
+    OriginalTitle = "Knocking"
+    Director = "Frida Kempff"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2021"
+    Length = "78 min"
+    Actors = "Cecilia Milocco, Albin Grenholm, Ville Virtanen, Krister Kern, Alexander Salzberger, Charlotta Åkerblom"
+    URL = ""
+    Description = "Molly sufre un incidente traumático debido a un sonido espeluznante procedente del piso de arriba de su nuevo apartamento. A medida que los ruidos se vuelven más desesperados y suenan cada vez más como gritos de ayuda, Molly se da cuenta de que sus vecinos no la escuchan cuando ella acude a ellos en busca de ayuda. En una inquietante búsqueda de la verdad, Molly se da cuenta de que nadie le cree y comienza a cuestionarse a sí misma."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/875.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "266"
+    Source = "DVD"
+    Rating = "69/100"
+    OriginalTitle = "Krampus"
+    Director = "Michael Dougherty"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2015"
+    Length = "98 min"
+    Actors = "Emjay Anthony, Adam Scott, Toni Collette, Stefania LaVie Owen, Krista Stadler, Conchata Ferrell"
+    URL = ""
+    Description = "Cuando su familia disfuncional choca durante las vacaciones, el joven Max se desilusiona y le da la espalda a la Navidad. Mientras tanto, esta falta de espíritu festivo desata la ira de Krampus: una fuerza demoníaca de antigua maldad que intenta castigar a los no creyentes. Se desata el infierno cuando los queridos íconos navideños toman una vida propia monstruosa, sitiando la casa de la familia fracturada y obligándolos a luchar unos por otros si esperan sobrevivir."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/876.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "267"
+    Source = "DVD"
+    Rating = "70/100"
+    OriginalTitle = "Kristy"
+    Director = "Olly Blackburn"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2014"
+    Length = "86 min"
+    Actors = "Haley Bennett, Ashley Greene, Lucas Till, Chris Coy, Mike Seal, Erica Ash"
+    URL = ""
+    Description = "Cuando una universitaria que está sola en el campus durante las vacaciones de Acción de Gracias es atacada por un grupo de marginados, debe vencer sus miedos más profundos para burlarlos y defenderse."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/877.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "268"
+    Source = "DVD"
+    Rating = "80/100"
+    OriginalTitle = "Kubo and the Two Strings"
+    Director = "Travis Knight"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2016"
+    Length = "102 min"
+    Actors = "Matthew McConaughey, Charlize Theron, Rooney Mara, Cary-Hiroyuki Tagawa, Ralph Fiennes, George Takei"
+    URL = ""
+    Description = "Kubo vive una vida tranquila y normal en un pequeño pueblo costero hasta que un espíritu del pasado pone su vida patas arriba al reavivar una antigua vendetta. Esto causa todo tipo de estragos mientras dioses y monstruos persiguen a Kubo quien, para sobrevivir, debe localizar una armadura mágica que una vez usó su difunto padre, un legendario guerrero samurái."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/878.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "269"
+    Source = "DVD"
+    Rating = "77/100"
+    OriginalTitle = "Kung Fu Hustle"
+    Director = "Stephen Chow"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2004"
+    Length = "99 min"
+    Actors = "Stephen Chow, Wah Yuen, Dong Zhi Hua, Qiu Yuen, Kwok-Kwan Chan, Shengyi Huang"
+    URL = ""
+    Description = "En una ciudad gobernada por Axe Gang, Sing quiere desesperadamente convertirse en miembro. Se topa con un barrio pobre gobernado por propietarios excéntricos que resultan ser maestros de kung fu disfrazados. Las acciones de Sing finalmente hacen que Axe Gang y los señores de los barrios marginales se involucren en una explosiva batalla de kung fu. Sólo un bando ganará y sólo un héroe surgirá como el mejor maestro de kung fu de todos."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/879.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "270"
+    Source = "DVD"
+    Rating = "68/100"
+    OriginalTitle = "Kung Fu Killer"
+    Director = "Teddy Chan"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2014"
+    Length = "100 min"
+    Actors = "Donnie Yen, Baoqiang Wang, Charlie Yeung, Bing Bai, Alex Fong, Louis Fan"
+    URL = ""
+    Description = "Un instructor de artes marciales de la policía es encarcelado tras matar a un hombre por accidente. Pero cuando un asesino cruel comienza a atacar a los maestros de artes marciales, el instructor se ofrece a ayudar a la policía a cambio de su libertad."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/880.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "271"
+    Source = "DVD"
+    Rating = "78/100"
+    OriginalTitle = "Kung Fu Panda"
+    Director = "Mark Osborne, John Stevenson"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2008"
+    Length = "92 min"
+    Actors = "Jack Black, Dustin Hoffman, Angelina Jolie, Ian McShane, Seth Rogen, Jackie Chan"
+    URL = ""
+    Description = "Kung Fu Panda presenta a Po the Panda, un humilde camarero de un restaurante de fideos, que es un fanático del kung fu pero cuya forma no se presta exactamente a las peleas de kung fu. Eso es un problema porque hay enemigos poderosos a las puertas, y todas las esperanzas están puestas en una profecía que nombra a Po como el &quot;Elegido&quot; para salvar el día. Un grupo de maestros de artes marciales necesitarán un cinturón negro de paciencia si quieren convertir a este panda holgazán en un luchador de kung fu antes de que sea demasiado tarde."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/881.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "272"
+    Source = "DVD"
+    Rating = "76/100"
+    OriginalTitle = "Kung Fu Panda 2"
+    Director = "Jennifer Yuh Nelson"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2011"
+    Length = "91 min"
+    Actors = "Jack Black, Angelina Jolie, Dustin Hoffman, Gary Oldman, Jackie Chan, Seth Rogen"
+    URL = ""
+    Description = "Po ahora está viviendo su sueño como El Guerrero Dragón, protegiendo el Valle de la Paz junto a sus amigos y compañeros maestros de kung fu, Los Cinco Furiosos: Tigresa, Grulla, Mantis, Víbora y Mono. Pero la nueva vida de genialidad de Po se ve amenazada por la aparición de un formidable villano, que planea utilizar un arma secreta e imparable para conquistar China y destruir el kung fu. Depende de Po y Los Cinco Furiosos viajar a través de China para enfrentar esta amenaza y vencerla. ¿Pero cómo puede Po detener un arma que puede detener el kung fu? Debe mirar a su pasado y descubrir los secretos de sus misteriosos orígenes; sólo entonces podrá desbloquear la fuerza que necesita para triunfar."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/882.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "273"
+    Source = "DVD"
+    Rating = "73/100"
+    OriginalTitle = "Kung Fu Panda 3"
+    Director = "Jennifer Yuh Nelson, Alessandro Carloni"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2016"
+    Length = "95 min"
+    Actors = "Jack Black, Bryan Cranston, Dustin Hoffman, Angelina Jolie, J.K. Simmons, Jackie Chan"
+    URL = ""
+    Description = "Cuando el padre panda de Po, desaparecido hace mucho tiempo, reaparece de repente, el dúo reunido viaja a un paraíso panda secreto para conocer a decenas de nuevos y divertidos personajes panda. Pero cuando el villano sobrenatural Kai comienza a recorrer China derrotando a todos los maestros de kung fu, Po debe hacer lo imposible: aprender a entrenar a una aldea llena de sus hermanos torpes y amantes de la diversión para convertirse en la banda definitiva de Kung Fu Pandas."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/883.jpg"
+    Borrower = "&nbsp;"
+  />
+  <Movie
+    Number = "274"
+    Source = "DVD"
+    Rating = "67/100"
+    OriginalTitle = "Kung Fu Panda 4"
+    Director = "Mike Mitchell"
+    Country = "United States"
+    Category = "&nbsp;"
+    Year = "2024"
+    Length = "94 min"
+    Actors = "Jack Black, Awkwafina, Viola Davis, Dustin Hoffman, James Hong, Bryan Cranston"
+    URL = ""
+    Description = "Después de que Po sea elegido para convertirse en el Líder Espiritual del Valle de la Paz, necesita encontrar y entrenar a un nuevo Guerrero Dragón, mientras una malvada hechicera planea volver a convocar a todos los maestros villanos a quienes Po ha vencido al reino de los espíritus."
+    Comments = "&nbsp;"
+    VideoFormat = "&nbsp;"
+    Languages = "&nbsp;"
+    Disks = "1"
+    Picture = "img/884.jpg"
+    Borrower = "&nbsp;"
+  />
+</Movies>
+<!-- End of Movies -->
+
+<script>
+//CATEGORIES
+AddCategoryType("Letters","getAttribute('OriginalTitle').charAt(0)");
+AddCategoryType("Category","getAttribute('Category')");
+AddCategoryType("Source","getAttribute('Source')");
+AddCategoryType("Format","getAttribute('VideoFormat')");
+AddCategoryType("Borrower","getAttribute('Borrower')");
+// AddCategoryType("Number","getAttribute('Number')");
+AddCategoryType("Director","getAttribute('Director').charAt(0)");
+</script>
